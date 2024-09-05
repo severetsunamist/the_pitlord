@@ -1,6 +1,6 @@
-import random
+
 from django.db import models
-from random_text.utils import random_class, random_nickname, CLASSES, STAGES
+from .random_text.utils import random_class, random_nickname, CLASSES, STAGES
 
 
 class PlayerModel(models.Model):

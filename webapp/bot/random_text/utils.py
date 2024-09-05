@@ -1,3 +1,5 @@
+import random
+
 def random_nickname():
     firsts = ['Bold', 'Tough', 'Sharp', 'Sneaky', 'Holly', 'Divine', 'Bloody', 'Evil', 'Creepy', 'Awesome', 'Serious',
               'Hip', 'Crazy', 'Mad', 'Agent', 'Liquid', 'Silver', 'Glorious', 'Wild', 'Old', 'Elder', 'Quick', 'Uncle']
