@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "djangobot-template"
+version = "0.1.0"
+description = ""
+authors = ["severetsunamist <severetsunamist@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+django = "5.1"
+django-grappelli = "4.0.1"
+environs = "11.0.0"
+gunicorn = "23.0.0"
+pytelegrambotapi = "4.22.1"
+aiohttp = '3.10.5'
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
