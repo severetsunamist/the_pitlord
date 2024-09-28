@@ -1,0 +1,16 @@
+classes_urls = {
+    'Paladin': 'https://imgbox.com/f23LF8jQ',
+    'Wizard': 'https://imgbox.com/nGzAfNCa',
+    'Druid': 'https://imgbox.com/yxS2FTbg',
+    'Shaman': 'https://imgbox.com/XOIeaVIG',
+    'Undertaker': 'https://imgbox.com/4i6eAEjT',
+    'Barbarian': 'https://imgbox.com/5kAgh8YO',
+    'Necromancer': 'https://imgbox.com/nZZmUg26',
+    'Assassin': 'https://imgbox.com/iBpDE9y1',
+    'Archer': 'https://imgbox.com/7lOWiumq',
+    'Sourcer': 'https://imgbox.com/Ufi928qO',
+    'Bard': 'https://imgbox.com/GTuPOGvs',
+    'Headsman': 'https://imgbox.com/ck5zUa0W',
+    'Knight': 'https://imgbox.com/2aTF6ee4',
+    'Monk': 'https://imgbox.com/gatlYoAD',
+    }

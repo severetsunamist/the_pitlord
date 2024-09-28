@@ -8,6 +8,7 @@ def random_nickname():
 
     nickname = f'{random.choice(firsts)} {random.choice(seconds)}'
     return nickname
+
 def random_class():
     all_classes = ['Paladin', 'Wizard', 'Druid', 'Shaman', 'Knight', 'Necromancer', 'Assassin', 'Archer',
                    'Sourcer', 'Bard', 'Headsman', 'Undertaker', 'Monk']

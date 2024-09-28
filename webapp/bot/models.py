@@ -1,6 +1,7 @@
 
 from django.db import models
-from .random_text.utils import random_class, random_nickname, CLASSES, STAGES
+from django.utils.translation.trans_real import deactivate
+from .random_text.utils import CLASSES, STAGES
 
 
 class PlayerModel(models.Model):
@@ -9,8 +10,6 @@ class PlayerModel(models.Model):
 
     exp = models.PositiveBigIntegerField('Experience', default=0, null=False, blank=False)
     next_lvl_exp = models.PositiveBigIntegerField('Next Lvl Experience', default=300, null=False, blank=False)
-    current_class = models.CharField('Current class', default='Not defined', max_length=20, choices=CLASSES, null=False,
-                                     blank=False)
 
     hero = models.ForeignKey('HeroModel', on_delete=models.CASCADE, blank=True, null=True, verbose_name="Current hero")
 
@@ -31,8 +30,8 @@ class HeroModel(models.Model):
     hero_owner = models.ForeignKey(PlayerModel, on_delete=models.CASCADE, verbose_name='Player', related_name='tg_account')
     hero_stage = models.CharField('Current stage', choices=STAGES, max_length=6, default='STATS', null=False, blank=False)
     hero_is_alive = models.BooleanField('Alive', default=True, null=False)
-    hero_class = models.CharField('Class', default=random_class(), max_length=20)
-    nickname = models.CharField('Name', max_length=20, default=random_nickname())
+    hero_class = models.CharField('Class', max_length=20)
+    nickname = models.CharField('Name', max_length=20)
     hero_str = models.SmallIntegerField('STR', default=5)
     hero_agl = models.SmallIntegerField('AGL', default=5)
     hero_int = models.SmallIntegerField('INT', default=5)
@@ -65,19 +64,20 @@ class HeroModel(models.Model):
 
 
 class BattleModel(models.Model):
-    started = models.DateTimeField('Date started', null=False, blank=False)
+    queued = models.BooleanField('Queued', default=True, null=False, blank=False)
+    started = models.DateTimeField('Date started', default=None, null=True, blank=False) # TODO ADD DEFAULT
     is_finished = models.BooleanField('Finished', default=False, null=False, blank=False)
     finished = models.DateTimeField('Date finished', null=True, blank=True)
 
-    current_round = models.PositiveSmallIntegerField('Current round', default=1, null=False, blank=False)
+    current_round = models.PositiveSmallIntegerField('Current round', default=0, null=False, blank=False)
     total_rounds = models.PositiveSmallIntegerField('Total rounds', null=True, blank=True)
 
-    hero_1 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=False, blank=False, verbose_name='Hero 1', related_name='hero_1')
-    hero_2 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=False, blank=False, verbose_name='Hero 2', related_name='hero_2')
-    hero_3 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=False, blank=False, verbose_name='Hero 3', related_name='hero_3')
+    hero_1 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=True, default=None, verbose_name='Hero 1', related_name='hero_1')
+    hero_2 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=True, default=None, verbose_name='Hero 2', related_name='hero_2')
+    hero_3 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=True, default=None, verbose_name='Hero 3', related_name='hero_3')
 
-    def __str__(self):
-        return f'{self.pk} {self.started} {self.hero_1.nickname} vs {self.hero_2.nickname} vs {self.hero_3.nickname}'
+    # def __str__(self):
+    #     return f'{self.pk} {self.started} {self.hero_1.nickname} vs {self.hero_2.nickname} vs {self.hero_3.nickname}'
 
     class Meta:
         verbose_name = 'Battle'
@@ -86,7 +86,7 @@ class BattleModel(models.Model):
 
 class RoundModel(models.Model):
     battle = models.ForeignKey(BattleModel, on_delete=models.CASCADE, verbose_name='Battle')
-    number = models.PositiveSmallIntegerField('Number', default=1, blank=False, null=False)
+    number = models.PositiveSmallIntegerField('Number', default=0, blank=False, null=False)
 
     def __str__(self):
         return f'{self.pk} {self.battle} Round {self.number}'
