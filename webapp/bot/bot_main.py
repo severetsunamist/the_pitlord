@@ -4,7 +4,7 @@ import asyncio
 from django.core.management import call_command
 from telebot import TeleBot
 from telebot import types
-from .models import PlayerModel, HeroModel, BattleModel
+from .models import PlayerModel, HeroModel, BattleModel, RoundModel
 from .random_text.utils import random_class, random_nickname
 from .visuals import stage_imgs, stage_text, class_imgs
 from .visuals.class_imgs import classes_urls
@@ -16,10 +16,13 @@ bot = TeleBot(settings.TG_BOT_TOKEN, parse_mode='HTML') # HTML parse mode not al
 
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
-
-    player, _ = PlayerModel.objects.get_or_create(tg_id=message.chat.id)
+    player, player_created = PlayerModel.objects.get_or_create(tg_id=message.chat.id)
     player.save()
-    hero, _ = HeroModel.objects.get_or_create(hero_owner=player)
+    hero, hero_created = HeroModel.objects.get_or_create(hero_owner=player)
+    if hero_created:
+        print("New hero created")
+    else:
+        print("Old hero downloaded")
     if not hero.hero_class and not hero.nickname:
         hero.hero_class = random_class()
         hero.nickname = random_nickname()
@@ -54,11 +57,14 @@ def callback(call):
 
     if call.data == 'enter':
         print("Pit is entered")
+        character.char.hero_stage = "STATS"
+        character.char.save()
         bot.send_photo(call.message.chat.id,
                              photo=classes_urls[character.hero_class],
                              caption=hero_text_repr(account, character),
                              reply_markup=markup
                              )
+
 
     if (call.data == 'add_str' or call.data == 'add_agl' or call.data == 'add_int') and character.free_stats > 0:
         if call.data == 'add_str':
@@ -95,12 +101,15 @@ def callback(call):
         if character.free_stats == 0:
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton("Fight", callback_data="fight"))
+            character.char.hero_stage = "READY"
+            character.char.save()
             bot.edit_message_caption(
                 chat_id=call.message.chat.id,
                 message_id=call.message.id,
                 caption=hero_text_repr(account, character),
                 reply_markup=markup
             )
+
     if call.data == "fight":
         battle, _ = BattleModel.objects.get_or_create(queued=True)
         print('Battle created. Queue is pending')
@@ -108,17 +117,43 @@ def callback(call):
             print('Hero 1')
             battle.hero_1 = character.char
             battle.save()
+        # elif not battle.hero_2:
+        #     print('Hero 2')
+        #     battle.hero_2 = character.char
+        #     battle.save()
         elif not battle.hero_2:
             print('Hero 2')
             battle.hero_2 = character.char
-            battle.save()
-        else:
-            print('Hero 3')
-            battle.hero_3 = character.char
             battle.queued = False
+            battle.current_round += 1
             battle.save()
+            cur_round = RoundModel.objects.create(battle=battle, number=battle.current_round)
+            cur_round.save()
+        character.char.hero_stage = "FIGHT"
+        character.char.save()
         bot.send_message(call.message.chat.id, "You are queued for a battle! It won't take too long")
-        bot.send_message(call.message.chat.id, "Thank you for testing, love you guys! <3")
+
+        # if not battle.queued:
+        #     print("Battle queued == False")
+        #     battle_queue = [battle.hero_1.hero_owner.tg_id, battle.hero_2.hero_owner.tg_id]
+        #     for chat_id in battle_queue:
+        #         print(chat_id)
+        #         bot.send_message(chat_id, "Fight started")
+
+        if not battle.queued:
+            markup = types.InlineKeyboardMarkup()
+            stat_choices = [types.InlineKeyboardButton("Hit left enemy", callback_data="hit_left"),
+                            types.InlineKeyboardButton("Block", callback_data="block"),
+                            types.InlineKeyboardButton("Hit right enemy", callback_data="hit_right")]
+
+            for i in stat_choices:
+                markup.add(i)
+
+            battle_queue = [battle.hero_1.hero_owner.tg_id, battle.hero_2.hero_owner.tg_id]
+            for chat_id in battle_queue:
+                bot.send_photo(chat_id, photo=stage_imgs.stages['battle'], caption="Choose your next move carefully", reply_markup=markup)
+
+
 
 
 @bot.message_handler(func=lambda message: True)

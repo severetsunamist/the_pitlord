@@ -30,8 +30,9 @@ CLASSES = [
     ('Bard', 'Bard')
 ]
 STAGES = [
+    ('ENTER', 'ENTER'),
     ('STATS', 'STATS'),
-    ('ITEMS', 'ITEMS'),
+    # ('ITEMS', 'ITEMS'),
     ('READY', 'READY'),
     ('FIGHT', 'FIGHT'),
     ('REWARD', 'REWARD'),

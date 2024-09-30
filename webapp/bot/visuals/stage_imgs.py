@@ -7,6 +7,8 @@ stages = {
 
     'store': 'https://imgbox.com/DSE9V636',
 
+    'battle': 'https://imgbox.com/mMsBW5fJ',
+
     'item': '',
     'ready': '',
     'win': '',

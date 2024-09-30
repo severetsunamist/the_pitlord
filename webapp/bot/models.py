@@ -28,7 +28,7 @@ class PlayerModel(models.Model):
 
 class HeroModel(models.Model):
     hero_owner = models.ForeignKey(PlayerModel, on_delete=models.CASCADE, verbose_name='Player', related_name='tg_account')
-    hero_stage = models.CharField('Current stage', choices=STAGES, max_length=6, default='STATS', null=False, blank=False)
+    hero_stage = models.CharField('Current stage', choices=STAGES, max_length=6, default='ENTER', null=False, blank=False)
     hero_is_alive = models.BooleanField('Alive', default=True, null=False)
     hero_class = models.CharField('Class', max_length=20)
     nickname = models.CharField('Name', max_length=20)
@@ -74,7 +74,7 @@ class BattleModel(models.Model):
 
     hero_1 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=True, default=None, verbose_name='Hero 1', related_name='hero_1')
     hero_2 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=True, default=None, verbose_name='Hero 2', related_name='hero_2')
-    hero_3 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=True, default=None, verbose_name='Hero 3', related_name='hero_3')
+    # hero_3 = models.ForeignKey(HeroModel, on_delete=models.CASCADE, null=True, default=None, verbose_name='Hero 3', related_name='hero_3')
 
     # def __str__(self):
     #     return f'{self.pk} {self.started} {self.hero_1.nickname} vs {self.hero_2.nickname} vs {self.hero_3.nickname}'
@@ -102,7 +102,7 @@ class ActionModel(models.Model):
     subject = models.ForeignKey(HeroModel, on_delete=models.CASCADE, verbose_name='Subject', related_name='actor')
     object = models.ForeignKey(HeroModel, on_delete=models.CASCADE, verbose_name='Object', related_name='victim')
     damage = models.SmallIntegerField('Damage', default=0, blank=False, null=False)
-    heal = models.SmallIntegerField('Damage', default=0, blank=False, null=False)
+    heal = models.SmallIntegerField('Heal', default=0, blank=False, null=False)
     # effect_applied = models.ForeignKey('EffectModel', on_delete=models.CASCADE)  //// EffectModel TODO LATER
 
     def __str__(self):
