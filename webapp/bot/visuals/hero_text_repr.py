@@ -75,3 +75,6 @@ STR🔴{character.hero_str}      AGL🟢{character.hero_agl}      INT🟣{charac
 DMG🔺3 - 15     ARM🔰2
 '''
     return hero_template
+
+
+def enemy_text_repr(): hero_text_repr

@@ -141,17 +141,29 @@ def callback(call):
         #         bot.send_message(chat_id, "Fight started")
 
         if not battle.queued:
-            markup = types.InlineKeyboardMarkup()
-            stat_choices = [types.InlineKeyboardButton("Hit left enemy", callback_data="hit_left"),
-                            types.InlineKeyboardButton("Block", callback_data="block"),
-                            types.InlineKeyboardButton("Hit right enemy", callback_data="hit_right")]
+            players = [battle.hero_1.hero_owner.tg_id, battle.hero_2.hero_owner.tg_id]
+            for chat_id in players:
+                bot.send_photo(chat_id, photo=stage_imgs.stages['battle'], caption="Battle begins.\nChoose your next move carefully!", reply_markup=None)
 
-            for i in stat_choices:
-                markup.add(i)
+                if call.message.chat.id == players[0]:
+                    enemy_player = players[1]
+                else:
+                    enemy_player = players[0]
 
-            battle_queue = [battle.hero_1.hero_owner.tg_id, battle.hero_2.hero_owner.tg_id]
-            for chat_id in battle_queue:
-                bot.send_photo(chat_id, photo=stage_imgs.stages['battle'], caption="Choose your next move carefully", reply_markup=markup)
+                markup = types.InlineKeyboardMarkup()
+                stat_choices = [types.InlineKeyboardButton("Hit enemy", callback_data="hit"),
+                                types.InlineKeyboardButton("Block", callback_data="block"),
+                                types.InlineKeyboardButton("Use physical skill", callback_data="skill"),
+                                types.InlineKeyboardButton("Use magic spell", callback_data="spell")]
+                for i in stat_choices:
+                    markup.add(i)
+
+                enemy_hero = HeroData(enemy_player)
+                bot.send_photo(chat_id,
+                               photo=classes_urls[enemy_hero.hero_class],
+                               caption=hero_text_repr(account, enemy_hero),
+                               reply_markup=markup
+                               )
 
 
 
