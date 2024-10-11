@@ -145,25 +145,49 @@ def callback(call):
             for chat_id in players:
                 bot.send_photo(chat_id, photo=stage_imgs.stages['battle'], caption="Battle begins.\nChoose your next move carefully!", reply_markup=None)
 
-                if call.message.chat.id == players[0]:
-                    enemy_player = players[1]
-                else:
-                    enemy_player = players[0]
+            next_round = True
+            while battle.hero_1.hero_is_alive and battle.hero_2.hero_is_alive and next_round:
+                next_round = False
+                for chat_id in players:
+                    if chat_id == players[0]:
+                        enemy_player = players[1]
+                    else:
+                        enemy_player = players[0]
 
-                markup = types.InlineKeyboardMarkup()
-                stat_choices = [types.InlineKeyboardButton("Hit enemy", callback_data="hit"),
-                                types.InlineKeyboardButton("Block", callback_data="block"),
-                                types.InlineKeyboardButton("Use physical skill", callback_data="skill"),
-                                types.InlineKeyboardButton("Use magic spell", callback_data="spell")]
-                for i in stat_choices:
-                    markup.add(i)
+                    markup = types.InlineKeyboardMarkup()
+                    stat_choices = [types.InlineKeyboardButton("Hit enemy", callback_data="hit"),
+                                    types.InlineKeyboardButton("Block", callback_data="block"),
+                                    types.InlineKeyboardButton("Use physical skill", callback_data="skill"),
+                                    types.InlineKeyboardButton("Use magic spell", callback_data="spell")]
+                    for i in stat_choices:
+                        markup.add(i)
 
-                enemy_hero = HeroData(enemy_player)
-                bot.send_photo(chat_id,
-                               photo=classes_urls[enemy_hero.hero_class],
-                               caption=hero_text_repr(account, enemy_hero),
-                               reply_markup=markup
-                               )
+                    enemy_hero = HeroData(enemy_player)
+                    bot.send_photo(chat_id,
+                                   photo=classes_urls[enemy_hero.hero_class],
+                                   caption=hero_text_repr(account, enemy_hero),
+                                   reply_markup=markup
+                                   )
+                    print(123123123)
+    if call.data == 'hit':
+        your_hero = HeroModel.objects.get(hero_owner=PlayerModel.objects.get(tg_id=call.message.chat.id))
+        try:
+            battle = BattleModel.objects.get(hero_1=your_hero)
+            enemy_hero = battle.hero_2
+        except:
+            battle = BattleModel.objects.get(hero_2=your_hero)
+            enemy_hero = battle.hero_1
+
+
+        bot.send_message(call.message.chat.id, text=f'{your_hero.nickname} just have hit {enemy_hero.nickname} ')
+
+        print('triggers 01')
+
+
+
+
+
+
 
 
 
