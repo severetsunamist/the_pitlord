@@ -4,11 +4,12 @@ import asyncio
 from django.core.management import call_command
 from telebot import TeleBot
 from telebot import types
-from .models import PlayerModel, HeroModel, BattleModel, RoundModel
+from .models import PlayerModel, HeroModel, BattleModel, RoundModel, ActionModel
 from .random_text.utils import random_class, random_nickname
-from .visuals import stage_imgs, stage_text, class_imgs
+from .visuals import stage_imgs, stage_text, class_imgs, markups
 from .visuals.class_imgs import classes_urls
 from .visuals.hero_text_repr import hero_text_repr, HeroData
+from random import randint
 
 
 bot = TeleBot(settings.TG_BOT_TOKEN, parse_mode='HTML') # HTML parse mode not always works with MarkDown
@@ -46,6 +47,7 @@ def send_welcome(message):
 def callback(call):
     account = call.message.chat.id
     character = HeroData(account)
+    your_hero = character.char
     print(character)
     markup = types.InlineKeyboardMarkup()
     stat_choices = [types.InlineKeyboardButton("+STR", callback_data="add_str"),
@@ -57,8 +59,9 @@ def callback(call):
 
     if call.data == 'enter':
         print("Pit is entered")
-        character.char.hero_stage = "STATS"
-        character.char.save()
+        if your_hero.hero_stage == "ENTER":
+            your_hero.hero_stage = "STATS"
+            your_hero.save()
         bot.send_photo(call.message.chat.id,
                              photo=classes_urls[character.hero_class],
                              caption=hero_text_repr(account, character),
@@ -68,25 +71,25 @@ def callback(call):
 
     if (call.data == 'add_str' or call.data == 'add_agl' or call.data == 'add_int') and character.free_stats > 0:
         if call.data == 'add_str':
-            character.char.hero_free_stats -= 1
-            character.char.hero_str += 1
-            character.char.hero_max_hp += 10
-            character.char.hero_cur_hp += 10
-            character.char.save()
+            your_hero.hero_free_stats -= 1
+            your_hero.hero_str += 1
+            your_hero.hero_max_hp += 10
+            your_hero.hero_cur_hp += 10
+            your_hero.save()
             print(f"STR is added to {character.hero_nickname}")
         if call.data == 'add_agl':
-            character.char.hero_free_stats -= 1
-            character.char.hero_agl += 1
-            character.char.hero_max_ap += 10
-            character.char.hero_cur_ap += 10
-            character.char.save()
+            your_hero.hero_free_stats -= 1
+            your_hero.hero_agl += 1
+            your_hero.hero_max_ap += 10
+            your_hero.hero_cur_ap += 10
+            your_hero.save()
             print(f"AGL is added to {character.hero_nickname}")
         if call.data == 'add_int':
-            character.char.hero_free_stats -= 1
-            character.char.hero_int += 1
-            character.char.hero_max_mp += 10
-            character.char.hero_cur_mp += 10
-            character.char.save()
+            your_hero.hero_free_stats -= 1
+            your_hero.hero_int += 1
+            your_hero.hero_max_mp += 10
+            your_hero.hero_cur_mp += 10
+            your_hero.save()
             print(f"INT is added to {character.hero_nickname}")
 
         character = HeroData(account)
@@ -101,36 +104,40 @@ def callback(call):
         if character.free_stats == 0:
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton("Fight", callback_data="fight"))
-            character.char.hero_stage = "READY"
-            character.char.save()
+            if your_hero.hero_stage == "STATS":
+                your_hero.hero_stage = "READY"
+                your_hero.save()
             bot.edit_message_caption(
                 chat_id=call.message.chat.id,
                 message_id=call.message.id,
                 caption=hero_text_repr(account, character),
                 reply_markup=markup
             )
+    if your_hero.hero_stage == "FIGHT":
+        pass
 
     if call.data == "fight":
         battle, _ = BattleModel.objects.get_or_create(queued=True)
         print('Battle created. Queue is pending')
         if not battle.hero_1:
             print('Hero 1')
-            battle.hero_1 = character.char
+            battle.hero_1 = your_hero
             battle.save()
         # elif not battle.hero_2:
         #     print('Hero 2')
-        #     battle.hero_2 = character.char
+        #     battle.hero_2 = your_hero
         #     battle.save()
         elif not battle.hero_2:
             print('Hero 2')
-            battle.hero_2 = character.char
+            battle.hero_2 = your_hero
             battle.queued = False
             battle.current_round += 1
             battle.save()
             cur_round = RoundModel.objects.create(battle=battle, number=battle.current_round)
             cur_round.save()
-        character.char.hero_stage = "FIGHT"
-        character.char.save()
+        if your_hero.hero_stage == "READY":
+            your_hero.hero_stage = "FIGHT"
+            your_hero.save()
         bot.send_message(call.message.chat.id, "You are queued for a battle! It won't take too long")
 
         # if not battle.queued:
@@ -150,38 +157,66 @@ def callback(call):
                 next_round = False
                 for chat_id in players:
                     if chat_id == players[0]:
-                        enemy_player = players[1]
+                        enemy_player_tg_id = players[1]
+
                     else:
-                        enemy_player = players[0]
+                        enemy_player_tg_id = players[0]
 
-                    markup = types.InlineKeyboardMarkup()
-                    stat_choices = [types.InlineKeyboardButton("Hit enemy", callback_data="hit"),
-                                    types.InlineKeyboardButton("Block", callback_data="block"),
-                                    types.InlineKeyboardButton("Use physical skill", callback_data="skill"),
-                                    types.InlineKeyboardButton("Use magic spell", callback_data="spell")]
-                    for i in stat_choices:
-                        markup.add(i)
+                    markup = markups.action_markup(your_hero)
 
-                    enemy_hero = HeroData(enemy_player)
+                    enemy_hero = HeroData(enemy_player_tg_id)
                     bot.send_photo(chat_id,
                                    photo=classes_urls[enemy_hero.hero_class],
                                    caption=hero_text_repr(account, enemy_hero),
                                    reply_markup=markup
                                    )
-                    print(123123123)
+                    print("123123123")
     if call.data == 'hit':
         your_hero = HeroModel.objects.get(hero_owner=PlayerModel.objects.get(tg_id=call.message.chat.id))
+
         try:
             battle = BattleModel.objects.get(hero_1=your_hero)
             enemy_hero = battle.hero_2
-        except:
+        except: # ANOTHER TRY NEEDED?
             battle = BattleModel.objects.get(hero_2=your_hero)
             enemy_hero = battle.hero_1
+        if your_hero.hero_cur_ap >= 30:
+            actions_in_round = []
+            round_objects = RoundModel.objects.filter(battle=battle)
+            num = round_objects.count()
+            dealt_damage = randint(4, 12)
+            your_hero.hero_cur_ap -= 35
+            your_hero.save()
+            action = ActionModel(round=RoundModel.objects.get(number=num), subject=your_hero, object=enemy_hero, damage=dealt_damage)
+            actions_in_round.append(action)
+            action.save()
+            if not enemy_hero.hero_cur_hp <= 0:
+                enemy_hero.hero_cur_hp -= dealt_damage
+                enemy_hero.save()
 
 
-        bot.send_message(call.message.chat.id, text=f'{your_hero.nickname} just have hit {enemy_hero.nickname} ')
+            # if your_hero.hero_cur_ap < 30:
+            #     for act in actions_in_round:
+            #         act.save()
 
-        print('triggers 01')
+            if call.message.chat.id == battle.hero_1.hero_owner.tg_id:
+                bot.send_message(call.message.chat.id, text=f'You hit {action.object.nickname} by {action.damage}')
+                bot.send_message(battle.hero_2.hero_owner.tg_id, text=f'{action.subject.nickname} hits you by {action.damage}')
+            elif call.message.chat.id == battle.hero_2.hero_owner.tg_id:
+                bot.send_message(call.message.chat.id, text=f'You hit {action.object.nickname} by {action.damage}')
+                bot.send_message(battle.hero_1.hero_owner.tg_id, text=f'{action.subject.nickname} hits you by {action.damage}')
+
+            markup = markups.action_markup(your_hero)
+
+            character = HeroData(enemy_hero.hero_owner.tg_id)
+            bot.edit_message_caption(
+                chat_id=call.message.chat.id,
+                message_id=call.message.id,
+                caption=hero_text_repr(account, character),
+                reply_markup=markup
+            )
+            # bot.edit_message_media(media=classes_urls[enemy_hero.hero_class], chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=markup)
+            print('triggers 01')
 
 
 
