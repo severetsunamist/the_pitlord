@@ -1,13 +1,12 @@
 from argparse import Action as Action_argparse
-from webapp.bot.models import PlayerModel, HeroModel, BattleModel, RoundModel, ActionModel
-from webapp.bot.bot_main import bot
+from bot.models import PlayerModel, HeroModel, BattleModel, RoundModel, ActionModel
+
+
 class Battle:
     heroes = list()
     rounds = list()
-    battle_db: BattleModel
+    model: BattleModel
     cur_round = 0
-
-
 
     class Round:
         def __init__(self, battle, number):
@@ -35,29 +34,35 @@ class Battle:
             new_action.save()
 
 
-    def __init__(self, character):
-        self.battle_db, _ = BattleModel.objects.get_or_create(queued=True) # There will be a Battle Object for each player?
-        self.character = character
+    def __init__(self, your_hero, tgbot):
+        self.model, _ = BattleModel.objects.get_or_create(queued=True) # There will be a Battle Object for each player?
+        self.your_hero = your_hero
+        self.tgbot = tgbot
         print('Battle created. Queue is pending')
-
-        if not self.battle_db.hero_1:
+        first_round, _ = RoundModel.objects.get_or_create(battle=self.model, number=1)
+        first_round.save()
+        print(f"Queue round created {first_round}")
+        if not self.model.hero_1:
             print('Hero 1')
-            self.battle_db.hero_1 = character.char
-            self.battle_db.save()
+            self.model.hero_1 = your_hero
+            self.model.save()
+            self.heroes.append(your_hero)
 
-        elif not self.battle_db.hero_2:
+        elif not self.model.hero_2:
             print('Hero 2')
-            self.battle_db.hero_2 = character.char
-            self.battle_db.queued = False
-            self.battle_db.current_round += 1
-            self.battle_db.save()
+            self.model.hero_2 = your_hero
+            self.model.queued = False
+            self.model.current_round += 1
+            self.model.save()
+            self.heroes.append(your_hero)
 
-        character.char.hero_stage = "FIGHT"
-        character.char.save()
-        bot.send_message(character.char.hero_owner.tg_id, "You are queued for a battle! It won't take too long")
+        your_hero.hero_stage = "FIGHT"
+        your_hero.save()
+        tgbot.send_message(your_hero.hero_owner.tg_id, "You are queued for a battle! It won't take too long")
         self.next_round()
+        print(f"1st round created")
 
-            # cur_round = RoundModel.objects.create(battle=self.battle_db, number=self.battle_db.current_round)
+            # cur_round = RoundModel.objects.create(battle=self.model, number=self.model.current_round)
             # cur_round.save()
         # self.db_battle = BattleModel()
         # self.db_battle.save()
@@ -71,8 +76,8 @@ class Battle:
         made_action = cur_round.ActionClass(action_number=len(cur_round.actions)-1, playing_hero=playing_hero, victim=victim, damage=damage, heal=heal)
         cur_round.append(made_action)
         if action_type == "hit":
-            bot.send_message(playing_hero.hero_owner.tg_id, f"You hit {victim.nickname} by {damage}")
-            bot.send_message(victim.hero_owner.tg_id, f"{playing_hero.nickname} hits you by {damage}")
+            tgbot.send_message(playing_hero.hero_owner.tg_id, f"You hit {victim.nickname} by {damage}")
+            tgbot.send_message(victim.hero_owner.tg_id, f"{playing_hero.nickname} hits you by {damage}")
 
 
     def add_hero(self, hero):
@@ -81,12 +86,28 @@ class Battle:
 
 
     def next_round(self):
-        self.cur_round += 1
-        next_round = self.Round(self.cur_round, self)
-        next_round.save()
-        self.rounds.append(next_round)
-        for each in self.heroes:
-            bot.send_message(self.character.char.hero_owner.tg_id, f"Round {self.cur_round}") # Change character.char with each?
+        round_finished_counter = 0
+
+        for hero in self.heroes:
+            if hero.hero_finished_round:
+                round_finished_counter += 1
+
+        if round_finished_counter == 2:
+            for hero in self.heroes:
+                hero.hero_finished_round = False
+                hero.hero_cur_ap += int(hero.hero_max_ap / 2)
+                if hero.hero_cur_ap > hero.hero_max_ap:
+                    hero.hero_cur_ap = hero.hero_max_ap
+                hero.hero_cur_mp += int(hero.hero_max_mp / 2)
+                if hero.hero_cur_mp > hero.hero_max_mp:
+                    hero.hero_cur_mp = hero.hero_max_mp
+                hero.save()
+            self.cur_round += 1
+            next_round = self.Round(self.cur_round, self)
+            next_round.save()
+            self.rounds.append(next_round)
+            for each in self.heroes:
+                self.tgbot.send_message(self.your_hero.hero_owner.tg_id, f"Round {self.cur_round}") # Change your_hero with each?
 
 
 
@@ -100,13 +121,12 @@ class Battle:
         if count_alive == 1:
             for hero in self.heroes:
                 if winner_player == hero:
-                    bot.send_message(chat_id=hero.hero_owner.tg_id, text="You have won! Kill more become the pitlord")
+                    tgbot.send_message(chat_id=hero.hero_owner.tg_id, text="You have won! Kill more become the pitlord")
                 else:
-                    bot.send_message(chat_id=hero.hero_owner.tg_id, text="You are dead! in a pit...")
+                    tgbot.send_message(chat_id=hero.hero_owner.tg_id, text="You are dead! in a pit...")
         elif count_alive == 0:
             for hero in self.heroes:
-                bot.send_message(chat_id=hero.hero_owner.tg_id, text="All dead, such a pity...")
+                tgbot.send_message(chat_id=hero.hero_owner.tg_id, text="All dead, such a pity...")
         else:
-
             self.next_round()
 

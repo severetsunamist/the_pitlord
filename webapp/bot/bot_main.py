@@ -1,6 +1,5 @@
 from django.conf import settings
 import asyncio
-
 from django.core.management import call_command
 from telebot import TeleBot
 from telebot import types
@@ -10,12 +9,13 @@ from .visuals import stage_imgs, stage_text, class_imgs, markups
 from .visuals.class_imgs import classes_urls
 from .visuals.hero_text_repr import hero_text_repr, HeroData
 from random import randint
+from .battle.battle import Battle
 
 
-bot = TeleBot(settings.TG_BOT_TOKEN, parse_mode='HTML') # HTML parse mode not always works with MarkDown
+tgbot = TeleBot(settings.TG_BOT_TOKEN, parse_mode='HTML') # HTML parse mode not always works with MarkDown
 
 
-@bot.message_handler(commands=['help', 'start'])
+@tgbot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
     player, player_created = PlayerModel.objects.get_or_create(tg_id=message.chat.id)
     player.save()
@@ -33,17 +33,17 @@ def send_welcome(message):
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("Enter the pit", callback_data='enter'))
 
-    bot.send_message(message.chat.id, welcome_message)
+    tgbot.send_message(message.chat.id, welcome_message)
 
 
 
-    bot.send_photo(message.chat.id,
+    tgbot.send_photo(message.chat.id,
                          photo=stage_imgs.stages['welcome'],
                          caption=stage_text.stage_text['welcome'],
                          reply_markup=markup
                          )
 
-@bot.callback_query_handler(func=lambda call: True)
+@tgbot.callback_query_handler(func=lambda call: True)
 def callback(call):
     account = call.message.chat.id
     character = HeroData(account)
@@ -62,7 +62,7 @@ def callback(call):
         if your_hero.hero_stage == "ENTER":
             your_hero.hero_stage = "STATS"
             your_hero.save()
-        bot.send_photo(call.message.chat.id,
+        tgbot.send_photo(call.message.chat.id,
                              photo=classes_urls[character.hero_class],
                              caption=hero_text_repr(account, character),
                              reply_markup=markup
@@ -93,7 +93,7 @@ def callback(call):
             print(f"INT is added to {character.hero_nickname}")
 
         character = HeroData(account)
-        bot.edit_message_caption(
+        tgbot.edit_message_caption(
                             chat_id=call.message.chat.id,
                             message_id=call.message.id,
                             caption=hero_text_repr(account, character),
@@ -107,7 +107,7 @@ def callback(call):
             if your_hero.hero_stage == "STATS":
                 your_hero.hero_stage = "READY"
                 your_hero.save()
-            bot.edit_message_caption(
+            tgbot.edit_message_caption(
                 chat_id=call.message.chat.id,
                 message_id=call.message.id,
                 caption=hero_text_repr(account, character),
@@ -117,28 +117,15 @@ def callback(call):
         pass
 
     if call.data == "fight":
-        battle, _ = BattleModel.objects.get_or_create(queued=True)
+        battle = Battle(your_hero, tgbot)
         print('Battle created. Queue is pending')
-        if not battle.hero_1:
-            print('Hero 1')
-            battle.hero_1 = your_hero
-            battle.save()
-        # elif not battle.hero_2:
-        #     print('Hero 2')
-        #     battle.hero_2 = your_hero
-        #     battle.save()
-        elif not battle.hero_2:
-            print('Hero 2')
-            battle.hero_2 = your_hero
-            battle.queued = False
-            battle.current_round += 1
-            battle.save()
-            cur_round = RoundModel.objects.create(battle=battle, number=battle.current_round)
-            cur_round.save()
+
+
+
         if your_hero.hero_stage == "READY":
             your_hero.hero_stage = "FIGHT"
             your_hero.save()
-        bot.send_message(call.message.chat.id, "You are queued for a battle! It won't take too long")
+        # tgbot.send_message(call.message.chat.id, "You are queued for a battle! It won't take too long")
 
         # if not battle.queued:
         #     print("Battle queued == False")
@@ -147,13 +134,13 @@ def callback(call):
         #         print(chat_id)
         #         bot.send_message(chat_id, "Fight started")
 
-        if not battle.queued:
-            players = [battle.hero_1.hero_owner.tg_id, battle.hero_2.hero_owner.tg_id]
+        if not battle.model.queued:
+            players = [battle.model.hero_1.hero_owner.tg_id, battle.model.hero_2.hero_owner.tg_id]
             for chat_id in players:
-                bot.send_photo(chat_id, photo=stage_imgs.stages['battle'], caption="Battle begins.\nChoose your next move carefully!", reply_markup=None)
+                tgbot.send_photo(chat_id, photo=stage_imgs.stages['battle'], caption="Battle begins.\nChoose your next move carefully!", reply_markup=None)
 
             next_round = True
-            while battle.hero_1.hero_is_alive and battle.hero_2.hero_is_alive and next_round:
+            while battle.model.hero_1.hero_is_alive and battle.model.hero_2.hero_is_alive and next_round:
                 next_round = False
                 for chat_id in players:
                     if chat_id == players[0]:
@@ -165,7 +152,7 @@ def callback(call):
                     markup = markups.action_markup(your_hero)
 
                     enemy_hero = HeroData(enemy_player_tg_id)
-                    bot.send_photo(chat_id,
+                    tgbot.send_photo(chat_id,
                                    photo=classes_urls[enemy_hero.hero_class],
                                    caption=hero_text_repr(account, enemy_hero),
                                    reply_markup=markup
@@ -180,14 +167,14 @@ def callback(call):
         except: # ANOTHER TRY NEEDED?
             battle = BattleModel.objects.get(hero_2=your_hero)
             enemy_hero = battle.hero_1
-        if your_hero.hero_cur_ap >= 30:
+        if your_hero.hero_cur_ap >= 35:
             actions_in_round = []
-            round_objects = RoundModel.objects.filter(battle=battle)
-            num = round_objects.count()
+
             dealt_damage = randint(4, 12)
             your_hero.hero_cur_ap -= 35
             your_hero.save()
-            action = ActionModel(round=RoundModel.objects.get(number=num), subject=your_hero, object=enemy_hero, damage=dealt_damage)
+
+            action = ActionModel(round=RoundModel.objects.get(number=1), subject=your_hero, object=enemy_hero, damage=dealt_damage)
             actions_in_round.append(action)
             action.save()
             if not enemy_hero.hero_cur_hp <= 0:
@@ -200,24 +187,28 @@ def callback(call):
             #         act.save()
 
             if call.message.chat.id == battle.hero_1.hero_owner.tg_id:
-                bot.send_message(call.message.chat.id, text=f'You hit {action.object.nickname} by {action.damage}')
-                bot.send_message(battle.hero_2.hero_owner.tg_id, text=f'{action.subject.nickname} hits you by {action.damage}')
+                tgbot.send_message(call.message.chat.id, text=f'You hit {action.object.nickname} by {action.damage}')
+                tgbot.send_message(battle.hero_2.hero_owner.tg_id, text=f'{action.subject.nickname} hits you by {action.damage}')
             elif call.message.chat.id == battle.hero_2.hero_owner.tg_id:
-                bot.send_message(call.message.chat.id, text=f'You hit {action.object.nickname} by {action.damage}')
-                bot.send_message(battle.hero_1.hero_owner.tg_id, text=f'{action.subject.nickname} hits you by {action.damage}')
+                tgbot.send_message(call.message.chat.id, text=f'You hit {action.object.nickname} by {action.damage}')
+                tgbot.send_message(battle.hero_1.hero_owner.tg_id, text=f'{action.subject.nickname} hits you by {action.damage}')
 
             markup = markups.action_markup(your_hero)
 
             character = HeroData(enemy_hero.hero_owner.tg_id)
-            bot.edit_message_caption(
+            tgbot.edit_message_caption(
                 chat_id=call.message.chat.id,
                 message_id=call.message.id,
                 caption=hero_text_repr(account, character),
                 reply_markup=markup
             )
-            # bot.edit_message_media(media=classes_urls[enemy_hero.hero_class], chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=markup)
+            # tgbot.edit_message_media(media=classes_urls[enemy_hero.hero_class], chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=markup)
             print('triggers 01')
 
+        if call.data == "end_round":
+            your_hero.hero_finished_round = True
+            your_hero.save()
+            battle.try_end_battle() # Might cause a problem CHECK LATER if the battle object is correct
 
 
 
@@ -227,8 +218,10 @@ def callback(call):
 
 
 
-@bot.message_handler(func=lambda message: True)
+
+
+@tgbot.message_handler(func=lambda message: True)
 def echo_message(message):
-    bot.reply_to(message, message.text)
+    tgbot.reply_to(message, message.text)
 
 

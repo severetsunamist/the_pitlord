@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from bot.models import PlayerModel
 import asyncio
 
-from bot.bot_main import bot
+from bot.bot_main import tgbot
 
 class Command(BaseCommand):
     help = 'Lunching bot'
@@ -12,4 +12,4 @@ class Command(BaseCommand):
         PlayerModel.objects.all().delete()
 
         print("Bot is running")
-        asyncio.run(bot.infinity_polling())
+        asyncio.run(tgbot.infinity_polling())

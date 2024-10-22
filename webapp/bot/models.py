@@ -29,6 +29,7 @@ class PlayerModel(models.Model):
 class HeroModel(models.Model):
     hero_owner = models.ForeignKey(PlayerModel, on_delete=models.CASCADE, verbose_name='Player', related_name='tg_account')
     hero_stage = models.CharField('Current stage', choices=STAGES, max_length=6, default='ENTER', null=False, blank=False)
+    hero_finished_round = models.BooleanField("Finished round", default=False)
     hero_is_alive = models.BooleanField('Alive', default=True, null=False)
     hero_class = models.CharField('Class', max_length=20)
     nickname = models.CharField('Name', max_length=20)
