@@ -5,7 +5,7 @@ from .random_text.utils import CLASSES, STAGES
 
 
 class PlayerModel(models.Model):
-    tg_id = models.PositiveIntegerField('Telegram account id', unique=True)
+    tg_id = models.PositiveBigIntegerField('Telegram account id', unique=True)
     level = models.PositiveSmallIntegerField('Level', default=1, null=False, blank=False)
 
     exp = models.PositiveBigIntegerField('Experience', default=0, null=False, blank=False)

@@ -1,0 +1,39 @@
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Django
+media/
+staticfiles/
+webapp/bot/migrations/*
+# IDE/Editor
+.vscode/
+.idea/
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Dependency directories
+node_modules/
+vendor/
+dist/
+build/
+
+# Sensitive data
+*.key
+*.pem
+*.cert
+secrets/
+config/
