@@ -10,8 +10,7 @@ def random_nickname():
     return nickname
 
 def random_class():
-    all_classes = ['Paladin', 'Wizard', 'Druid', 'Shaman', 'Knight', 'Necromancer', 'Assassin', 'Archer',
-                   'Sourcer', 'Bard', 'Headsman', 'Undertaker', 'Monk']
+    all_classes = ['Druid', 'Shaman', 'Knight', 'Necromancer', 'Archer', 'Sourcer', 'Headsman', 'Undertaker', 'Monk']
     return random.choice(all_classes)
 
 CLASSES = [
@@ -29,11 +28,13 @@ CLASSES = [
     ('Undertaker', 'Undertaker'),
     ('Bard', 'Bard')
 ]
+
 STAGES = [
     ('ENTER', 'ENTER'),
     ('STATS', 'STATS'),
     # ('ITEMS', 'ITEMS'),
     ('READY', 'READY'),
+    ('QUEUE', 'QUEUE'),
     ('FIGHT', 'FIGHT'),
     ('REWARD', 'REWARD'),
 ]

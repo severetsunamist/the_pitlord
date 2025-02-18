@@ -31,4 +31,4 @@ COPY ./webapp /webapp
 EXPOSE 8080
 
 # # Run the application
-# CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && gunicorn webapp.wsgi:application --bind 0.0.0.0:${PORT}"]
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py makemigrations && python manage.py migrate && python manage.py create_superuser && gunicorn webapp.wsgi:application --bind 0.0.0.0:${PORT}"]

@@ -51,10 +51,11 @@ class Battle:
         elif not self.model.hero_2:
             print('Hero 2')
             self.model.hero_2 = your_hero
+            self.heroes.append(your_hero)
             self.model.queued = False
             self.model.current_round += 1
             self.model.save()
-            self.heroes.append(your_hero)
+            
 
         your_hero.hero_stage = "FIGHT"
         your_hero.save()

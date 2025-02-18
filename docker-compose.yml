@@ -26,8 +26,10 @@ services:
       DB_USER_PW: ${DB_USER_PW}
       DB_HOST: db
       DB_PORT: 5432
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
     depends_on:
       - db
+    # command: sh -c "python manage.py collectstatic --noinput"
       
   bot:
     build: .

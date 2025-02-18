@@ -14,6 +14,7 @@ gunicorn = "23.0.0"
 pytelegrambotapi = "4.22.1"
 aiohttp = "3.10.5"
 psycopg2-binary = "^2.9"
+whitenoise = "6.9.0"
 
 [build-system]
 requires = ["poetry-core"]
