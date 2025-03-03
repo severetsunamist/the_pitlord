@@ -76,5 +76,65 @@ DMG🔺3 - 15     ARM🔰2
 '''
     return hero_template
 
+    
 
-def enemy_text_repr(): hero_text_repr
+def battle_text_repr(you, enemy):
+    def render_bars(character):
+        hp_bar = ''
+        ap_bar = ''
+        mp_bar = ''
+
+        hp_chunck = character.hero_max_hp / 13
+        hp_chuncks_filled = round(character.hero_cur_hp / hp_chunck)
+        for i in range(hp_chuncks_filled):
+            hp_bar += '🟥'
+        for y in range(13 - hp_chuncks_filled):
+            hp_bar += '⬜️'
+
+        ap_chunck = character.hero_max_ap / 13
+        ap_chuncks_filled = round(character.hero_cur_ap / ap_chunck)
+        for i in range(ap_chuncks_filled):
+            ap_bar += '🟩'
+        for y in range(13 - ap_chuncks_filled):
+            ap_bar += '⬜️'
+
+        mp_chunck = character.hero_max_mp / 13
+        mp_chuncks_filled = round(character.hero_cur_mp / mp_chunck)
+        for i in range(mp_chuncks_filled):
+            mp_bar += '🟪'
+        for y in range(13 - mp_chuncks_filled):
+            mp_bar += '⬜️'
+        return hp_bar, ap_bar, mp_bar
+
+
+    enemy_hp_bar, enemy_ap_bar, enemy_mp_bar = render_bars(enemy)
+    your_hp_bar, your_ap_bar, your_mp_bar = render_bars(you)
+
+    battle_template = f'''
+
+<b>☠ENEMY☠</b> <i>{enemy.hero_nickname}</i>
+
+STR🔴{enemy.hero_str}      AGL🟢{enemy.hero_agl}      INT🟣{enemy.hero_int}
+
+{enemy_hp_bar}
+{enemy.hero_cur_hp}/{enemy.hero_max_hp} HP
+{enemy_ap_bar}
+{enemy.hero_cur_ap}/{enemy.hero_max_ap} AP
+{enemy_mp_bar}
+{enemy.hero_cur_mp}/{enemy.hero_max_mp} MP
+
+🔺🔻🔺🔻🔺🔻<b>VS</b>🔺🔻🔺🔻🔺🔻
+
+<b>⚔HERO⚔</b> <i>{you.hero_nickname}</i>
+
+STR🔴{you.hero_str}      AGL🟢{you.hero_agl}      INT🟣{you.hero_int}
+
+{your_hp_bar}
+{you.hero_cur_hp}/{you.hero_max_hp} HP
+{your_ap_bar}
+{you.hero_cur_ap}/{you.hero_max_ap} AP
+{your_mp_bar}
+{you.hero_cur_mp}/{you.hero_max_mp} MP
+
+'''
+    return battle_template

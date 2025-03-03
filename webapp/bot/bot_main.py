@@ -7,7 +7,7 @@ from .models import PlayerModel, HeroModel, BattleModel, RoundModel, ActionModel
 from .random_text.utils import random_class, random_nickname
 from .visuals import stage_imgs, stage_text, class_imgs, markups
 from .visuals.class_imgs import classes_urls
-from .visuals.hero_text_repr import hero_text_repr, HeroData
+from .visuals.hero_text_repr import hero_text_repr, HeroData, battle_text_repr
 from random import randint
 from .battle.battle import Battle
 
@@ -150,11 +150,11 @@ def callback(call):
                         enemy_player_tg_id = players[0]
 
                     markup = markups.action_markup(your_hero)
-
+                    character = HeroData(chat_id)
                     enemy_hero = HeroData(enemy_player_tg_id)
                     tgbot.send_photo(chat_id,
                                    photo=classes_urls[enemy_hero.hero_class],
-                                   caption=hero_text_repr(account, enemy_hero),
+                                   caption=battle_text_repr(character, enemy_hero),
                                    reply_markup=markup
                                    )
                     print("123123123")
@@ -167,24 +167,17 @@ def callback(call):
         except: # ANOTHER TRY NEEDED?
             battle = BattleModel.objects.get(hero_2=your_hero)
             enemy_hero = battle.hero_1
-        if your_hero.hero_cur_ap >= 35:
-            actions_in_round = []
 
-            dealt_damage = randint(4, 12)
+        if your_hero.hero_cur_ap >= 35:
+            # TODO Wrap by transaction
+            dealt_damage = randint(4, 12) # your_hero.calc_damage()
             your_hero.hero_cur_ap -= 35
             your_hero.save()
-
-            action = ActionModel(round=RoundModel.objects.get(number=1), subject=your_hero, object=enemy_hero, damage=dealt_damage)
-            actions_in_round.append(action)
+            action = ActionModel(round=RoundModel.objects.get(number=1), subject=your_hero, object=enemy_hero, damage=dealt_damage) # number=battle.current_round
             action.save()
             if not enemy_hero.hero_cur_hp <= 0:
                 enemy_hero.hero_cur_hp -= dealt_damage
                 enemy_hero.save()
-
-
-            # if your_hero.hero_cur_ap < 30:
-            #     for act in actions_in_round:
-            #         act.save()
 
             if call.message.chat.id == battle.hero_1.hero_owner.tg_id:
                 tgbot.send_message(call.message.chat.id, text=f'You hit {action.object.nickname} by {action.damage}')
@@ -194,16 +187,22 @@ def callback(call):
                 tgbot.send_message(battle.hero_1.hero_owner.tg_id, text=f'{action.subject.nickname} hits you by {action.damage}')
 
             markup = markups.action_markup(your_hero)
+            character = HeroData(your_hero.hero_owner.tg_id)
+            enemy = HeroData(enemy_hero.hero_owner.tg_id)
 
-            character = HeroData(enemy_hero.hero_owner.tg_id)
+            # TODO 2 messages should be edited, store call.message.ids at battle object
             tgbot.edit_message_caption(
-                chat_id=call.message.chat.id,
+                chat_id=your_hero.hero_owner.tg_id,
                 message_id=call.message.id,
-                caption=hero_text_repr(account, character),
+                caption=battle_text_repr(character, enemy),
                 reply_markup=markup
             )
             # tgbot.edit_message_media(media=classes_urls[enemy_hero.hero_class], chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=markup)
-            print('triggers 01')
+            print('triggers 01 ######################################################################')
+            print(f'call.message.chat.id - {call.message.chat.id}')
+            print(f'your_hero.hero_owner.tg_id - {your_hero.hero_owner.tg_id}')
+            print(f'enemy_hero.hero_owner.tg_id - {enemy_hero.hero_owner.tg_id}')
+            print(f'call.message.id - {call.message.id}')
 
         if call.data == "end_round":
             your_hero.hero_finished_round = True
